@@ -10,6 +10,7 @@ use Laminas\Diactoros\ServerRequest;
 use League\OAuth2\Server\AuthorizationServer;
 use League\OAuth2\Server\Grant\AuthCodeGrant;
 use League\OAuth2\Server\ResponseTypes\BearerTokenResponse;
+use Oauth2Server\Crypto\CloudCryptKey;
 use Oauth2Server\Repositories\AccessTokenRepository;
 use Oauth2Server\Repositories\AuthCodeRepository;
 use Oauth2Server\Repositories\ClientRepository;
@@ -24,10 +25,11 @@ class Auth2ServerProvider extends ServiceProvider
         $clientRepository = new ClientRepository();
         $accessTokenRepository = new AccessTokenRepository();
         $scopeRepository = new ScopeRepository();
-        $privateKey = storage_path('private.key');
+//        $privateKey = storage_path('private.key');
+        $privateKey = new CloudCryptKey('1');
         $responseType = new BearerTokenResponse();
 
-        $server = new AuthorizationServer(
+        $server = new CustomAuthorizationServer(
             clientRepository: $clientRepository,
             accessTokenRepository: $accessTokenRepository,
             scopeRepository: $scopeRepository,
@@ -48,7 +50,7 @@ class Auth2ServerProvider extends ServiceProvider
             new DateInterval('PT1H')
         );
 
-        $this->app->instance(AuthorizationServer::class, $server);
+        $this->app->instance(CustomAuthorizationServer::class, $server);
 
         $request = \Laminas\Diactoros\ServerRequestFactory::fromGlobals(
             $_SERVER,

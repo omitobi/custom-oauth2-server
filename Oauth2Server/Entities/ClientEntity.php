@@ -35,14 +35,4 @@ class ClientEntity implements ClientEntityInterface
     {
         $this->isConfidential = true;
     }
-
-    public function getIdentifier(): string
-    {
-        return 'myawesomeapp';
-    }
-
-    public function getRedirectUri(): string|array
-    {
-        return 'http://examples.test';
-    }
 }

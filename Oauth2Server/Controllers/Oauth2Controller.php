@@ -4,22 +4,20 @@ declare(strict_types=1);
 
 namespace Oauth2Server\Controllers;
 
+use Exception;
 use Laminas\Diactoros\Response;
 use Laminas\Diactoros\ServerRequest;
 use Laminas\Diactoros\Stream;
 use League\OAuth2\Server\AuthorizationServer;
 use League\OAuth2\Server\Exception\OAuthServerException;
+use Oauth2Server\CustomAuthorizationServer;
 use Oauth2Server\Entities\UserEntity;
 use Oauth2Server\Oauth2ServiceServer;
 use Psr\Http\Message\ResponseInterface;
 
 class Oauth2Controller
 {
-    public function __construct(protected AuthorizationServer $server)
-    {
-    }
-
-    public function authorize(AuthorizationServer $server, ServerRequest $psrRequest, Response $psrResponse): ResponseInterface
+    public function authorize(CustomAuthorizationServer $server, ServerRequest $psrRequest, Response $psrResponse): ResponseInterface
     {
         try {
             // Validate the HTTP request and return an AuthorizationRequest object.
@@ -35,6 +33,20 @@ class Oauth2Controller
 
             // Return the HTTP redirect response
             return $server->completeAuthorizationRequest($authRequest, $psrResponse);
+        } catch (OAuthServerException $exception) {
+            return $exception->generateHttpResponse($psrResponse);
+        } catch (Exception $exception) {
+            $body = new Stream('php://temp', 'r+');
+            $body->write($exception->getMessage());
+
+            return $psrResponse->withStatus(500)->withBody($body);
+        }
+    }
+
+    public function accessToken(CustomAuthorizationServer $server, ServerRequest $psrRequest, Response $psrResponse): ResponseInterface
+    {
+        try {
+            return $server->respondToAccessTokenRequest($psrRequest, $psrResponse);
         } catch (OAuthServerException $exception) {
             return $exception->generateHttpResponse($psrResponse);
         } catch (Exception $exception) {

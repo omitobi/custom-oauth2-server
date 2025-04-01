@@ -22,7 +22,7 @@ use function password_verify;
 class ClientRepository implements ClientRepositoryInterface
 {
     private const CLIENT_NAME = 'My Awesome App';
-    private const REDIRECT_URI = 'http://foo/bar';
+    private const REDIRECT_URI = 'http://examples.test';
 
     /**
      * {@inheritdoc}
