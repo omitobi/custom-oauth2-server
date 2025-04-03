@@ -32,12 +32,12 @@ final class Core
 
     private function getPrivateKey(string $keyId): string
     {
-        return Storage::get('private.key');
+        return Storage::get('private_key.pem');
     }
 
     public function getPublicKey(string $keyId): string
     {
-        return Storage::get('public.key');
+        return Storage::get('public_key.pem');
     }
 
     public function encrypt(
