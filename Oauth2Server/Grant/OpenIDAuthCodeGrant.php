@@ -18,6 +18,40 @@ use Psr\Http\Message\ServerRequestInterface;
 
 class OpenIDAuthCodeGrant extends AuthCodeGrant implements GrantTypeInterface
 {
+    /**
+     * @param ServerRequestInterface $request
+     * @return AuthorizationRequestInterface
+     * @throws OAuthServerException
+     */
+    public function validateAuthorizationRequest(ServerRequestInterface $request): AuthorizationRequestInterface
+    {
+        $authorizationRequest = parent::validateAuthorizationRequest($request);
+
+        $this->validateOpenIdScope(
+            $this->getQueryStringParameter('scope', $request),
+        );
+
+        return $authorizationRequest;
+    }
+
+    private function validateOpenIdScope(string|array|null $scopes): void
+    {
+        if ($scopes === null) {
+            $scopes = [];
+        } elseif (is_string($scopes)) {
+            $scopes = $this->convertScopesQueryStringToArray($scopes);
+        }
+
+        if (!in_array('openid', $scopes, true)) {
+            throw OAuthServerException::invalidRequest('scope', '\'openid\' scope is missing in request parameters.');
+        }
+    }
+
+    private function convertScopesQueryStringToArray(string $scopes): array
+    {
+        return array_filter(explode(self::SCOPE_DELIMITER_STRING, trim($scopes)), static fn ($scope) => $scope !== '');
+    }
+
     public function respondToAccessTokenRequest(
         ServerRequestInterface $request,
         ResponseTypeInterface $responseType,
