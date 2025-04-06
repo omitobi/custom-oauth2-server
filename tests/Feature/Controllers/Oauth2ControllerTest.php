@@ -64,8 +64,6 @@ class Oauth2ControllerTest extends TestCase
         $this->assertArrayHasKey('expires_in', $response);
         $this->assertArrayHasKey('refresh_token', $response);
         $this->assertArrayHasKey('id_token', $response);
-
-        dd($response);
     }
 
     /**
