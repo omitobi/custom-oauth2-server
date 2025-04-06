@@ -167,11 +167,33 @@ class OpenIDAuthCodeGrant extends AuthCodeGrant implements GrantTypeInterface
 
     public function canRespondToAuthorizationRequest(ServerRequestInterface $request): bool
     {
-        return (
-            array_key_exists('response_type', $request->getQueryParams())
-            && $request->getQueryParams()['response_type'] === 'code'
-            && isset($request->getQueryParams()['client_id'])
-        );
+        $responseTye = $request->getQueryParams()['response_type'] ?? null;
+        if ($responseTye !== 'code') {
+            return false;
+        }
+        $clientId = $request->getQueryParams()['client_id'] ?? null;
+
+        if (empty($clientId)) {
+            return false;
+        }
+
+        // Check for redirect_uri.
+
+        $redirectUri = $request->getQueryParams()['redirect_uri'] ?? null;
+
+        if (empty($redirectUri)) {
+            return false;
+        }
+
+        // Check for openid scope.
+        $scope = $request->getQueryParams()['scope'] ?? '';
+        $scopes = explode(self::SCOPE_DELIMITER_STRING, $scope);
+
+        if (!in_array('openid', $scopes, true)) {
+            return false;
+        }
+
+        return true;
     }
 
     public function getIdentifier(): string
