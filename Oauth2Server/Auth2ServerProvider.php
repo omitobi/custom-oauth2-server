@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Oauth2Server;
 
 use DateInterval;
+use Illuminate\Http\Request;
 use Illuminate\Support\ServiceProvider;
 use Laminas\Diactoros\ServerRequest;
 use League\OAuth2\Server\AuthorizationServer;
@@ -52,14 +53,30 @@ class Auth2ServerProvider extends ServiceProvider
 
         $this->app->instance(CustomAuthorizationServer::class, $server);
 
-        $request = \Laminas\Diactoros\ServerRequestFactory::fromGlobals(
-            $_SERVER,
-            $_GET,
-            $_POST,
-            $_COOKIE,
-            $_FILES
-        );
 
-        $this->app->instance(ServerRequest::class, $request);
+
+        $this->app->bind(ServerRequest::class, function ($app) {
+//            return\Laminas\Diactoros\ServerRequestFactory::fromGlobals(
+//                $_SERVER,
+//                $_GET,
+//                $_POST,
+//                $_COOKIE,
+//                $_FILES
+//            );
+            /** @var Request $laravelRequest */
+            $laravelRequest = $app['request'];
+            return new ServerRequest(
+                serverParams: $laravelRequest->server->all(),
+                uploadedFiles: $laravelRequest->files->all(),
+                uri: $laravelRequest->url(),
+                method: $laravelRequest->method(),
+                headers: $laravelRequest->headers->all(),
+                cookieParams: $laravelRequest->cookies->all(),
+                queryParams: $laravelRequest->query->all(),
+                parsedBody: $laravelRequest->request->all(),
+            );
+});
+
+
     }
 }

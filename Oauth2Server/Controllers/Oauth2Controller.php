@@ -45,6 +45,7 @@ class Oauth2Controller
 
     public function accessToken(CustomAuthorizationServer $server, ServerRequest $psrRequest, Response $psrResponse): ResponseInterface
     {
+//        dd($psrRequest->getParsedBody(), request()->all());
         try {
             return $server->respondToAccessTokenRequest($psrRequest, $psrResponse);
         } catch (OAuthServerException $exception) {
