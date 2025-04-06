@@ -31,7 +31,28 @@ class OpenIDAuthCodeGrant extends AuthCodeGrant implements GrantTypeInterface
             $this->getQueryStringParameter('scope', $request),
         );
 
+        $this->validateOpenIdRedirectUri($request);
+
         return $authorizationRequest;
+    }
+
+    /**
+     * @param ServerRequestInterface $request
+     * @return void
+     * @throws OAuthServerException
+     */
+    protected function validateOpenIdRedirectUri(ServerRequestInterface $request): void
+    {
+        $clientId = $this->getQueryStringParameter(
+            'client_id',
+            $request,
+            $this->getServerParameter('PHP_AUTH_USER', $request)
+        );
+
+        $client = $this->getClientEntityOrFail($clientId, $request);
+        $redirectUri = $this->getQueryStringParameter('redirect_uri', $request) ?? '';
+
+        parent::validateRedirectUri($redirectUri, $client, $request);
     }
 
     private function validateOpenIdScope(string|array|null $scopes): void
