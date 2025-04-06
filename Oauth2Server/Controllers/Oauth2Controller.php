@@ -27,6 +27,8 @@ class Oauth2Controller
             // Once the user has logged in set the user on the AuthorizationRequest
             $authRequest->setUser(new UserEntity());
 
+            $authRequest->setScopes($authRequest->getScopes());
+
             // Once the user has approved or denied the client update the status
             // (true = approved, false = denied)
             $authRequest->setAuthorizationApproved(true);

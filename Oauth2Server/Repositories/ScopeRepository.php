@@ -26,6 +26,9 @@ class ScopeRepository implements ScopeRepositoryInterface
     public function getScopeEntityByIdentifier($scopeIdentifier): ?ScopeEntityInterface
     {
         $scopes = [
+            'openid' => [
+                'description' => 'Indicates the authentication through openid connect',
+            ],
             'basic' => [
                 'description' => 'Basic details about you',
             ],

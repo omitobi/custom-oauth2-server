@@ -12,7 +12,9 @@ class Oauth2ControllerTest extends TestCase
 
         $response = $this->request(
             method: 'get',
-            path: '/authorize?client_id=myawesomeapp&redirect_uri=http://examples.test&response_type=code&state=state',
+            path: '/authorize?client_id=myawesomeapp&redirect_uri=http://examples.test&response_type=code&state=state'
+//            . '&scope=openid'
+            ,
             responseType: 'redirection',
         );
 
@@ -28,8 +30,11 @@ class Oauth2ControllerTest extends TestCase
 
         return $response;
     }
+
     public function testAccessToken(): void
     {
+        $this->withoutExceptionHandling();
+
         $codeResponse = $this->testCodeAuthorization();
 
         // Extract 'code' from query parameters.

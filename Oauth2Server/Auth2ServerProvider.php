@@ -12,6 +12,7 @@ use League\OAuth2\Server\AuthorizationServer;
 use League\OAuth2\Server\Grant\AuthCodeGrant;
 use League\OAuth2\Server\ResponseTypes\BearerTokenResponse;
 use Oauth2Server\Crypto\CloudCryptKey;
+use Oauth2Server\Grant\OpenIDAuthCodeGrant;
 use Oauth2Server\Repositories\AccessTokenRepository;
 use Oauth2Server\Repositories\AuthCodeRepository;
 use Oauth2Server\Repositories\ClientRepository;
@@ -42,8 +43,17 @@ class Auth2ServerProvider extends ServiceProvider
         $authCodeRepository = new AuthCodeRepository();
         $refreshTokenRepository = new RefreshTokenRepository();
         // Enable the authentication code grant on the server with a token TTL of 1 hour
+//        $server->enableGrantType(
+//            new AuthCodeGrant(
+//                $authCodeRepository,
+//                $refreshTokenRepository,
+//                new DateInterval('PT10M'),
+//            ),
+//            new DateInterval('PT1H')
+//        );
+
         $server->enableGrantType(
-            new AuthCodeGrant(
+            new OpenIDAuthCodeGrant(
                 $authCodeRepository,
                 $refreshTokenRepository,
                 new DateInterval('PT10M'),
