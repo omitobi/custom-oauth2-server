@@ -13,11 +13,12 @@ use League\OAuth2\Server\Grant\AuthCodeGrant;
 use League\OAuth2\Server\ResponseTypes\BearerTokenResponse;
 use Oauth2Server\Crypto\CloudCryptKey;
 use Oauth2Server\Grant\OpenIDAuthCodeGrant;
-use Oauth2Server\Repositories\AccessTokenRepository;
+use Oauth2Server\Repositories\TokenRepository;
 use Oauth2Server\Repositories\AuthCodeRepository;
 use Oauth2Server\Repositories\ClientRepository;
 use Oauth2Server\Repositories\RefreshTokenRepository;
 use Oauth2Server\Repositories\ScopeRepository;
+use Oauth2Server\ResponseTypes\OpenIdBearerTokenResponse;
 use Psr\Http\Message\ServerRequestInterface;
 
 class Auth2ServerProvider extends ServiceProvider
@@ -25,15 +26,17 @@ class Auth2ServerProvider extends ServiceProvider
     public function register(): void
     {
         $clientRepository = new ClientRepository();
-        $accessTokenRepository = new AccessTokenRepository();
+        $accessTokenRepository = new TokenRepository();
+        $idTokenRepository = new TokenRepository();
         $scopeRepository = new ScopeRepository();
 //        $privateKey = storage_path('private.key');
         $privateKey = new CloudCryptKey('1');
-        $responseType = new BearerTokenResponse();
+        $responseType = new OpenIdBearerTokenResponse();
 
         $server = new CustomAuthorizationServer(
             clientRepository: $clientRepository,
             accessTokenRepository: $accessTokenRepository,
+            idTokenTokenRepository: $idTokenRepository,
             scopeRepository: $scopeRepository,
             privateKey: $privateKey,
             encryptionKey: 'lxZFUEsBCJ2Yb14IF2ygAHI5N4+ZAUXXaSeeJm6+twsUmIen',

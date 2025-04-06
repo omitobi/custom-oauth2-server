@@ -3,21 +3,101 @@
 namespace Oauth2Server\Grant;
 
 use DateInterval;
+use DateTimeImmutable;
 use InvalidArgumentException;
+use League\OAuth2\Server\Entities\AccessTokenEntityInterface;
 use League\OAuth2\Server\Entities\ClientEntityInterface;
 use League\OAuth2\Server\Exception\OAuthServerException;
+use League\OAuth2\Server\Exception\UniqueTokenIdentifierConstraintViolationException;
 use League\OAuth2\Server\Grant\AuthCodeGrant;
 use League\OAuth2\Server\Grant\GrantTypeInterface;
+use League\OAuth2\Server\Repositories\AccessTokenRepositoryInterface;
 use League\OAuth2\Server\RequestAccessTokenEvent;
 use League\OAuth2\Server\RequestEvent;
 use League\OAuth2\Server\RequestRefreshTokenEvent;
 use League\OAuth2\Server\RequestTypes\AuthorizationRequestInterface;
 use League\OAuth2\Server\ResponseTypes\ResponseTypeInterface;
 use LogicException;
+use Oauth2Server\Entities\IdTokenEntityInterface;
+use Oauth2Server\Repositories\IdTokenRepositoryInterface;
+use Oauth2Server\ResponseTypes\OpenIdResponseTypeInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-class OpenIDAuthCodeGrant extends AuthCodeGrant implements GrantTypeInterface
+class OpenIDAuthCodeGrant extends AuthCodeGrant implements OpenIdGrantTypeInterface
 {
+    protected IdTokenRepositoryInterface $idTokenRepository;
+
+    public function respondToAccessTokenRequest(
+        ServerRequestInterface $request,
+        OpenIdResponseTypeInterface|ResponseTypeInterface $responseType,
+        DateInterval $accessTokenTTL
+    ): ResponseTypeInterface {
+        $client = $this->validateClient($request);
+
+        $encryptedAuthCode = $this->getRequestParameter('code', $request);
+
+        if ($encryptedAuthCode === null) {
+            throw OAuthServerException::invalidRequest('code');
+        }
+
+        try {
+            $authCodePayload = json_decode($this->decrypt($encryptedAuthCode));
+
+            $this->validateAuthorizationCode($authCodePayload, $client, $request);
+
+            $scopes = $this->scopeRepository->finalizeScopes(
+                $this->validateScopes($authCodePayload->scopes),
+                $this->getIdentifier(),
+                $client,
+                $authCodePayload->user_id,
+                $authCodePayload->auth_code_id
+            );
+        } catch (InvalidArgumentException $e) {
+            throw OAuthServerException::invalidGrant('Cannot validate the provided authorization code');
+        } catch (LogicException $e) {
+            throw OAuthServerException::invalidRequest('code', 'Issue decrypting the authorization code', $e);
+        }
+
+        // Issue and persist new access token
+        $accessToken = $this->issueAccessToken($accessTokenTTL, $client, $authCodePayload->user_id, $scopes);
+        $this->getEmitter()->emit(new RequestAccessTokenEvent(RequestEvent::ACCESS_TOKEN_ISSUED, $request, $accessToken));
+        $responseType->setAccessToken($accessToken);
+
+        // Issue and persist new refresh token if given
+        $refreshToken = $this->issueRefreshToken($accessToken);
+
+        if ($refreshToken !== null) {
+            $this->getEmitter()->emit(new RequestRefreshTokenEvent(RequestEvent::REFRESH_TOKEN_ISSUED, $request, $refreshToken));
+            $responseType->setRefreshToken($refreshToken);
+        }
+
+        // Issue and persist new id_token
+        $idToken = $this->issueIdToken($accessTokenTTL, $client, $authCodePayload->user_id, $scopes);
+        // Todo.update: Create RequestIdTokenEvent if needed.
+        $this->getEmitter()->emit(new RequestAccessTokenEvent(RequestEvent::ACCESS_TOKEN_ISSUED, $request, $idToken));
+        $responseType->setIdToken($idToken);
+
+        // Revoke used auth code
+        $this->authCodeRepository->revokeAuthCode($authCodePayload->auth_code_id);
+
+        return $responseType;
+    }
+
+    protected function issueIdToken(
+        DateInterval $accessTokenTTL,
+        ClientEntityInterface $client,
+        string|null $userIdentifier,
+        array $scopes = []
+    ): IdTokenEntityInterface {
+        $idToken = $this->idTokenRepository->getNewIdToken($client, $scopes, $userIdentifier);
+        $idToken->setExpiryDateTime((new DateTimeImmutable())->add($accessTokenTTL));
+        $idToken->setPrivateKey($this->privateKey);
+        $idToken->setIdentifier($this->generateUniqueIdentifier());
+
+        // This should never be hit. It is here to work around a PHPStan false error
+        return $idToken;
+    }
+
     /**
      * @param ServerRequestInterface $request
      * @return AuthorizationRequestInterface
@@ -71,56 +151,6 @@ class OpenIDAuthCodeGrant extends AuthCodeGrant implements GrantTypeInterface
     private function convertScopesQueryStringToArray(string $scopes): array
     {
         return array_filter(explode(self::SCOPE_DELIMITER_STRING, trim($scopes)), static fn ($scope) => $scope !== '');
-    }
-
-    public function respondToAccessTokenRequest(
-        ServerRequestInterface $request,
-        ResponseTypeInterface $responseType,
-        DateInterval $accessTokenTTL
-    ): ResponseTypeInterface {
-        $client = $this->validateClient($request);
-
-        $encryptedAuthCode = $this->getRequestParameter('code', $request);
-
-        if ($encryptedAuthCode === null) {
-            throw OAuthServerException::invalidRequest('code');
-        }
-
-        try {
-            $authCodePayload = json_decode($this->decrypt($encryptedAuthCode));
-
-            $this->validateAuthorizationCode($authCodePayload, $client, $request);
-
-            $scopes = $this->scopeRepository->finalizeScopes(
-                $this->validateScopes($authCodePayload->scopes),
-                $this->getIdentifier(),
-                $client,
-                $authCodePayload->user_id,
-                $authCodePayload->auth_code_id
-            );
-        } catch (InvalidArgumentException $e) {
-            throw OAuthServerException::invalidGrant('Cannot validate the provided authorization code');
-        } catch (LogicException $e) {
-            throw OAuthServerException::invalidRequest('code', 'Issue decrypting the authorization code', $e);
-        }
-
-        // Issue and persist new access token
-        $accessToken = $this->issueAccessToken($accessTokenTTL, $client, $authCodePayload->user_id, $scopes);
-        $this->getEmitter()->emit(new RequestAccessTokenEvent(RequestEvent::ACCESS_TOKEN_ISSUED, $request, $accessToken));
-        $responseType->setAccessToken($accessToken);
-
-        // Issue and persist new refresh token if given
-        $refreshToken = $this->issueRefreshToken($accessToken);
-
-        if ($refreshToken !== null) {
-            $this->getEmitter()->emit(new RequestRefreshTokenEvent(RequestEvent::REFRESH_TOKEN_ISSUED, $request, $refreshToken));
-            $responseType->setRefreshToken($refreshToken);
-        }
-
-        // Revoke used auth code
-        $this->authCodeRepository->revokeAuthCode($authCodePayload->auth_code_id);
-
-        return $responseType;
     }
 
     private function validateAuthorizationCode(
@@ -199,5 +229,10 @@ class OpenIDAuthCodeGrant extends AuthCodeGrant implements GrantTypeInterface
     public function getIdentifier(): string
     {
         return 'authorization_code';
+    }
+
+    public function setIdTokenRepository(IdTokenRepositoryInterface $idTokenRepository): void
+    {
+        $this->idTokenRepository = $idTokenRepository;
     }
 }

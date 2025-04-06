@@ -16,8 +16,10 @@ use League\OAuth2\Server\Entities\AccessTokenEntityInterface;
 use League\OAuth2\Server\Entities\ClientEntityInterface;
 use League\OAuth2\Server\Repositories\AccessTokenRepositoryInterface;
 use Oauth2Server\Entities\AccessTokenEntity;
+use Oauth2Server\Entities\IdTokenEntity;
+use Oauth2Server\Entities\IdTokenEntityInterface;
 
-class AccessTokenRepository implements AccessTokenRepositoryInterface
+class TokenRepository implements IdTokenRepositoryInterface
 {
     /**
      * {@inheritdoc}
@@ -61,5 +63,24 @@ class AccessTokenRepository implements AccessTokenRepositoryInterface
         }
 
         return $accessToken;
+    }
+
+    public function getNewIdToken(ClientEntityInterface $clientEntity, array $scopes, $userIdentifier = null): IdTokenEntityInterface
+    {
+        $idToken = new IdTokenEntity();
+
+        $idToken->setClient($clientEntity);
+
+        $idToken->setIssuer(url('/'));
+
+        foreach ($scopes as $scope) {
+            $idToken->addScope($scope);
+        }
+
+        if ($userIdentifier !== null) {
+            $idToken->setUserIdentifier((string) $userIdentifier);
+        }
+
+        return $idToken;
     }
 }
