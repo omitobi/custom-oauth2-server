@@ -21,9 +21,8 @@ class IdTokenEntity implements IdTokenEntityInterface
     use EntityTrait;
 
     public readonly string $issuer;
-
+    private string|null $nonce = null;
     private CryptKeyInterface $privateKey;
-
     private Configuration $jwtConfiguration;
 
     /**
@@ -59,7 +58,7 @@ class IdTokenEntity implements IdTokenEntityInterface
     {
         $this->initJwtConfiguration();
 
-        return $this->jwtConfiguration->builder()
+        $builder = $this->jwtConfiguration->builder()
             ->issuedBy($this->issuer)
             ->permittedFor($this->getClient()->getIdentifier())
             ->identifiedBy($this->getIdentifier())
@@ -67,8 +66,13 @@ class IdTokenEntity implements IdTokenEntityInterface
             ->canOnlyBeUsedAfter(new DateTimeImmutable())
             ->expiresAt($this->getExpiryDateTime())
             ->relatedTo($this->getSubjectIdentifier())
-            ->withClaim('scopes', $this->getScopes())
-            ->getToken($this->jwtConfiguration->signer(), $this->jwtConfiguration->signingKey());
+            ->withClaim('scopes', $this->getScopes());
+
+        if ($this->nonce) {
+            $builder = $builder->withClaim('nonce', $this->nonce);
+        }
+
+        return $builder->getToken($this->jwtConfiguration->signer(), $this->jwtConfiguration->signingKey());
     }
 
     /**
@@ -90,5 +94,10 @@ class IdTokenEntity implements IdTokenEntityInterface
     public function setIssuer(string $issuer): void
     {
         $this->issuer = $issuer;
+    }
+
+    public function setNonce(string|null $nonce): void
+    {
+        $this->nonce = $nonce;
     }
 }
