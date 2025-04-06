@@ -10,14 +10,13 @@ use Laminas\Diactoros\ServerRequest;
 use Laminas\Diactoros\Stream;
 use League\OAuth2\Server\AuthorizationServer;
 use League\OAuth2\Server\Exception\OAuthServerException;
-use Oauth2Server\CustomAuthorizationServer;
+use Oauth2Server\OpenIdAuthorizationServer;
 use Oauth2Server\Entities\UserEntity;
-use Oauth2Server\Oauth2ServiceServer;
 use Psr\Http\Message\ResponseInterface;
 
 class Oauth2Controller
 {
-    public function authorize(CustomAuthorizationServer $server, ServerRequest $psrRequest, Response $psrResponse): ResponseInterface
+    public function authorize(OpenIdAuthorizationServer $server, ServerRequest $psrRequest, Response $psrResponse): ResponseInterface
     {
         try {
             // Validate the HTTP request and return an AuthorizationRequest object.
@@ -45,7 +44,7 @@ class Oauth2Controller
         }
     }
 
-    public function accessToken(CustomAuthorizationServer $server, ServerRequest $psrRequest, Response $psrResponse): ResponseInterface
+    public function accessToken(OpenIdAuthorizationServer $server, ServerRequest $psrRequest, Response $psrResponse): ResponseInterface
     {
         try {
             return $server->respondToAccessTokenRequest($psrRequest, $psrResponse);

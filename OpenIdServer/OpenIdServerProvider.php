@@ -12,7 +12,7 @@ use League\OAuth2\Server\AuthorizationServer;
 use League\OAuth2\Server\Grant\AuthCodeGrant;
 use League\OAuth2\Server\ResponseTypes\BearerTokenResponse;
 use Oauth2Server\Crypto\CloudCryptKey;
-use Oauth2Server\Grant\OpenIDAuthCodeGrant;
+use Oauth2Server\Grant\OpenIdAuthCodeGrant;
 use Oauth2Server\Repositories\TokenRepository;
 use Oauth2Server\Repositories\AuthCodeRepository;
 use Oauth2Server\Repositories\ClientRepository;
@@ -21,7 +21,7 @@ use Oauth2Server\Repositories\ScopeRepository;
 use Oauth2Server\ResponseTypes\OpenIdBearerTokenResponse;
 use Psr\Http\Message\ServerRequestInterface;
 
-class Auth2ServerProvider extends ServiceProvider
+class OpenIdServerProvider extends ServiceProvider
 {
     public function register(): void
     {
@@ -33,7 +33,7 @@ class Auth2ServerProvider extends ServiceProvider
         $privateKey = new CloudCryptKey('1');
         $responseType = new OpenIdBearerTokenResponse();
 
-        $server = new CustomAuthorizationServer(
+        $server = new OpenIdAuthorizationServer(
             clientRepository: $clientRepository,
             accessTokenRepository: $accessTokenRepository,
             idTokenTokenRepository: $idTokenRepository,
@@ -56,7 +56,7 @@ class Auth2ServerProvider extends ServiceProvider
 //        );
 
         $server->enableGrantType(
-            new OpenIDAuthCodeGrant(
+            new OpenIdAuthCodeGrant(
                 $authCodeRepository,
                 $refreshTokenRepository,
                 new DateInterval('PT10M'),
@@ -64,7 +64,7 @@ class Auth2ServerProvider extends ServiceProvider
             new DateInterval('PT1H')
         );
 
-        $this->app->instance(CustomAuthorizationServer::class, $server);
+        $this->app->instance(OpenIdAuthorizationServer::class, $server);
 
 
 

@@ -18,6 +18,7 @@ class Oauth2ControllerTest extends TestCase
             . '&response_type=code'
             . '&state=state'
             . '&scope=openid'
+            . '&nonce=random'
             ,
             responseType: 'redirection',
         );
@@ -63,6 +64,8 @@ class Oauth2ControllerTest extends TestCase
         $this->assertArrayHasKey('expires_in', $response);
         $this->assertArrayHasKey('refresh_token', $response);
         $this->assertArrayHasKey('id_token', $response);
+
+        dd($response);
     }
 
     /**

@@ -23,7 +23,7 @@ use Oauth2Server\Repositories\IdTokenRepositoryInterface;
 use Oauth2Server\ResponseTypes\OpenIdResponseTypeInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-class OpenIDAuthCodeGrant extends AuthCodeGrant implements OpenIdGrantTypeInterface
+class OpenIdAuthCodeGrant extends AuthCodeGrant implements OpenIdGrantTypeInterface
 {
     protected IdTokenRepositoryInterface $idTokenRepository;
 

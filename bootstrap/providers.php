@@ -1,8 +1,8 @@
 <?php
 
-use Oauth2Server\Auth2ServerProvider;
+use Oauth2Server\OpenIdServerProvider;
 
 return [
     App\Providers\AppServiceProvider::class,
-    Auth2ServerProvider::class,
+    OpenIdServerProvider::class,
 ];
