@@ -24,6 +24,7 @@ use League\OAuth2\Server\ResponseTypes\RedirectResponse;
 use League\OAuth2\Server\ResponseTypes\ResponseTypeInterface;
 use LogicException;
 use Oauth2Server\Entities\IdTokenEntityInterface;
+use Oauth2Server\OpenIdRequestEvent;
 use Oauth2Server\Repositories\IdTokenRepositoryInterface;
 use Oauth2Server\RequestTypes\OpenIdAuthorizationRequest;
 use Oauth2Server\RequestTypes\OpenIdAuthorizationRequestInterface;
@@ -92,7 +93,7 @@ class OpenIdAuthCodeGrant extends AuthCodeGrant implements OpenIdGrantTypeInterf
         }
 
         // Todo.update: Create RequestIdTokenEvent if needed.
-        $this->getEmitter()->emit(new RequestAccessTokenEvent(RequestEvent::ACCESS_TOKEN_ISSUED, $request, $idToken));
+        $this->getEmitter()->emit(new RequestAccessTokenEvent(OpenIdRequestEvent::ID_TOKEN_ISSUED, $request, $idToken));
         $responseType->setIdToken($idToken);
 
         // Revoke used auth code
