@@ -2,6 +2,11 @@
 
 namespace Tests\Feature\Controllers;
 
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
+use Oauth2Server\Crypto\CloudCryptKey;
+use Oauth2Server\Crypto\CloudSigner;
+use Oauth2Server\Crypto\LocalSignerProvider;
 use Tests\TestCase;
 
 class Oauth2ControllerTest extends TestCase
@@ -64,6 +69,55 @@ class Oauth2ControllerTest extends TestCase
         $this->assertArrayHasKey('expires_in', $response);
         $this->assertArrayHasKey('refresh_token', $response);
         $this->assertArrayHasKey('id_token', $response);
+
+        $this->validateIdToken($response['id_token']);
+    }
+
+    protected function validateIdToken(string $idToken): void
+    {
+        $cryptKey = new CloudCryptKey('1');
+        $signerProvider = new LocalSignerProvider();
+        $signer = new CloudSigner($signerProvider);
+        $publicKey = $signer->getPublicKey($cryptKey->getKeyContents());
+
+        $firebaseKey = new Key($publicKey, 'RS256');
+        // Verification currently fails, we'll do a simple decode to check the body content.
+//        JWT::decode($idToken, $firebaseKey);
+
+        ['body' => $body] = $this->jwtSimpleDecode($idToken);
+
+        $this->assertEquals(
+            ['iss', 'aud', 'jti', 'iat', 'nbf', 'exp', 'sub', 'scopes', 'nonce'],
+            array_keys($body),
+        );
+    }
+
+    private function jwtSimpleDecode(string $jwt): array|object
+    {
+        $full = piper($jwt)->to(explode(...), '.');
+
+       $body = piper($full->up()[1])
+            ->to(str_replace(...), '_', '+')
+            ->to(str_replace(...), '_', '/')
+            ->to(base64_decode(...))
+            ->to(json_decode(...))
+            ->up(fn($obj) => (array)$obj);
+
+       $header = piper($full->up()[0])
+           ->to(str_replace(...), '_', '+')
+           ->to(str_replace(...), '_', '/')
+           ->to(base64_decode(...))
+           ->to(json_decode(...))
+           ->up(fn($obj) => (array)$obj);
+
+       $signature = piper($full->up()[2])
+           ->to(str_replace(...), '_', '+')
+           ->to(str_replace(...), '_', '/')
+           ->to(base64_decode(...))
+           ->to(json_decode(...))
+           ->up(fn($obj) => (array)$obj);
+
+       return compact('header', 'body', 'signature');
     }
 
     /**

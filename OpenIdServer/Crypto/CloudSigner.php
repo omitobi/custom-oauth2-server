@@ -43,4 +43,9 @@ class CloudSigner implements Signer
 
         return $this->provider->verify($expected, $signData);
     }
+
+    public function getPublicKey(string $keyId): string
+    {
+        return $this->provider->getPublicKey($keyId);
+    }
 }

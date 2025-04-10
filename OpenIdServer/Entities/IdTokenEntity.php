@@ -59,6 +59,7 @@ class IdTokenEntity implements IdTokenEntityInterface
         $this->initJwtConfiguration();
 
         $builder = $this->jwtConfiguration->builder()
+            ->withHeader('kid', $this->privateKey->getKeyContents())
             ->issuedBy($this->issuer)
             ->permittedFor($this->getClient()->getIdentifier())
             ->identifiedBy($this->getIdentifier())
