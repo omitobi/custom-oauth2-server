@@ -4,8 +4,11 @@ namespace Tests\Feature\Controllers;
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use Jose\Component\Core\JWKSet;
+use Jose\Component\KeyManagement\JWKFactory;
 use Oauth2Server\Crypto\CloudCryptKey;
 use Oauth2Server\Crypto\CloudSigner;
+use Oauth2Server\Crypto\LocalCrypto;
 use Oauth2Server\Crypto\LocalSignerProvider;
 use Tests\TestCase;
 
@@ -80,15 +83,27 @@ class Oauth2ControllerTest extends TestCase
         $signer = new CloudSigner($signerProvider);
         $publicKey = $signer->getPublicKey($cryptKey->getKeyContents());
 
-        $firebaseKey = new Key($publicKey, 'RS256');
-        // Verification currently fails, we'll do a simple decode to check the body content.
-//        JWT::decode($idToken, $firebaseKey);
+        $localCrypto = new LocalCrypto();
+        $verified = $localCrypto->verify(
+            key: $publicKey,
+            token: $idToken,
+            keyId: $cryptKey->getKeyContents()
+        );
 
-        ['body' => $body] = $this->jwtSimpleDecode($idToken);
+        // Verification currently fails, we'll do a simple decode to check the body content.
+        // We might be attempting to validate with invalid key.
+//        $this->assertTrue($verified);
+
+        ['body' => $body, 'header' => $header] = $this->jwtSimpleDecode($idToken);
 
         $this->assertEquals(
             ['iss', 'aud', 'jti', 'iat', 'nbf', 'exp', 'sub', 'scopes', 'nonce'],
             array_keys($body),
+        );
+
+        $this->assertEqualsCanonicalizing(
+            ['kid', 'alg', 'typ'],
+            array_keys($header),
         );
     }
 
