@@ -16,8 +16,9 @@ use League\OAuth2\Server\Repositories\ScopeRepositoryInterface;
 use League\OAuth2\Server\ResponseTypes\ResponseTypeInterface;
 use Oauth2Server\Grant\OpenIdGrantTypeInterface;
 use Oauth2Server\Repositories\IdTokenRepositoryInterface;
+use Oauth2Server\Servers\AuthorizationServerInterface;
 
-class OpenIdAuthorizationServer extends AuthorizationServer
+class OpenIdAuthorizationServer extends AuthorizationServer implements AuthorizationServerInterface
 {
     public function __construct(
         ClientRepositoryInterface $clientRepository,

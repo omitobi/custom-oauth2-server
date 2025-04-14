@@ -12,11 +12,12 @@ use League\OAuth2\Server\AuthorizationServer;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use Oauth2Server\OpenIdAuthorizationServer;
 use Oauth2Server\Entities\UserEntity;
+use Oauth2Server\Servers\AuthorizationServerInterface;
 use Psr\Http\Message\ResponseInterface;
 
 class Oauth2Controller
 {
-    public function authorize(OpenIdAuthorizationServer $server, ServerRequest $psrRequest, Response $psrResponse): ResponseInterface
+    public function authorize(AuthorizationServerInterface $server, ServerRequest $psrRequest, Response $psrResponse): ResponseInterface
     {
         try {
             // Validate the HTTP request and return an AuthorizationRequest object.
@@ -44,7 +45,7 @@ class Oauth2Controller
         }
     }
 
-    public function accessToken(OpenIdAuthorizationServer $server, ServerRequest $psrRequest, Response $psrResponse): ResponseInterface
+    public function accessToken(AuthorizationServerInterface $server, ServerRequest $psrRequest, Response $psrResponse): ResponseInterface
     {
         try {
             return $server->respondToAccessTokenRequest($psrRequest, $psrResponse);
