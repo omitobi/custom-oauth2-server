@@ -72,6 +72,7 @@ class AccessTokenEntity implements AccessTokenEntityInterface
         $this->initJwtConfiguration();
 
         return $this->jwtConfiguration->builder()
+            ->issuedBy(url('/'))
             ->permittedFor($this->getClient()->getIdentifier())
             ->identifiedBy($this->getIdentifier())
             ->issuedAt(new DateTimeImmutable())
